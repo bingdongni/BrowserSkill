@@ -1,0 +1,28 @@
+name: VOM modal validation
+
+on: push
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: python3 scripts/check-changelog-sync.py
+      - run: pnpm lint
+      - run: pnpm --filter @wxg-prc-cpg/browser-skill-dsh-plugin build && node scripts/check-dsh-package.mjs
+      - run: pnpm --filter @browser-skill/extension compile
+      - run: pnpm --filter @browser-skill/i18n test
+      - run: pnpm --filter @browser-skill/vom test
+      - run: pnpm ext:test
+      - run: pnpm ext:build
+      - name: Test observation layers in Chrome
+        run: BSK_CLICK_CHROME="$(command -v google-chrome)" pnpm --filter @browser-skill/extension exec vitest run src/tools/__tests__/observation-layers.browser.test.ts
